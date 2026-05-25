@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { COMMON_TIMEZONES } from "@/lib/settings";
+import { COMMON_TIMEZONES } from "@/lib/timezones";
 
 const VALID = new Set(COMMON_TIMEZONES.map((t) => t.value));
 

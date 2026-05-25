@@ -2,7 +2,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { COMMON_TIMEZONES } from "@/lib/settings";
+import { COMMON_TIMEZONES } from "@/lib/timezones";
 import { saveTimezone } from "./actions";
 
 interface Props {
