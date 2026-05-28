@@ -2,12 +2,13 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { markGiven, undoGiven } from "./actions";
-import type { DoseSlot, Profile } from "@/lib/types";
+import type { DoseSlot } from "@/lib/types";
+import type { Session } from "@/lib/session";
 import { formatTime12 } from "@/lib/time";
 
 interface Props {
   slot: DoseSlot;
-  currentUser: Profile;
+  currentSession: Session;
 }
 
 function getPosition(): Promise<{ latitude: number; longitude: number } | null> {
@@ -21,7 +22,7 @@ function getPosition(): Promise<{ latitude: number; longitude: number } | null> 
   });
 }
 
-export function MarkGivenButton({ slot, currentUser }: Props) {
+export function MarkGivenButton({ slot, currentSession }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -38,7 +39,7 @@ export function MarkGivenButton({ slot, currentUser }: Props) {
             <span className="text-muted"> by {slot.given_by_name}</span>
           )}
         </div>
-        {currentUser.role === "doctor" && (
+        {currentSession.role === "doctor" && (
           <Button
             variant="ghost"
             size="sm"

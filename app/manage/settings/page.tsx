@@ -1,26 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, CardBody } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/server";
-import { FALLBACK_TZ } from "@/lib/settings";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/session";
+import { FALLBACK_TZ } from "@/lib/timezones";
 import { TimezoneForm } from "./settings-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "doctor") redirect("/dashboard");
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (session.role !== "doctor") redirect("/dashboard");
 
+  const supabase = createServiceClient();
   const { data: tzRow } = await supabase
     .from("app_settings")
-    .select("value, updated_at, updated_by_name")
+    .select("value, updated_at")
     .eq("key", "current_timezone")
     .maybeSingle();
 
@@ -40,7 +36,6 @@ export default async function SettingsPage() {
         <CardBody>
           <TimezoneForm
             currentTz={tzRow?.value || FALLBACK_TZ}
-            updatedByName={tzRow?.updated_by_name ?? null}
             updatedAt={tzRow?.updated_at ?? null}
           />
         </CardBody>

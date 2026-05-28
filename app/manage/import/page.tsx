@@ -1,19 +1,13 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/session";
 import { ImportClient } from "./import-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function ImportPage() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "doctor") redirect("/dashboard");
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (session.role !== "doctor") redirect("/dashboard");
 
   return (
     <main className="mx-auto max-w-3xl p-4 sm:p-6">

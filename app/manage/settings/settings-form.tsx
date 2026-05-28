@@ -7,11 +7,10 @@ import { saveTimezone } from "./actions";
 
 interface Props {
   currentTz: string;
-  updatedByName: string | null;
   updatedAt: string | null;
 }
 
-export function TimezoneForm({ currentTz, updatedByName, updatedAt }: Props) {
+export function TimezoneForm({ currentTz, updatedAt }: Props) {
   const [selected, setSelected] = useState(currentTz);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,9 +65,9 @@ export function TimezoneForm({ currentTz, updatedByName, updatedAt }: Props) {
         Updating it does <em>not</em> alter past records.
       </div>
 
-      {updatedByName && updatedAt && (
+      {updatedAt && (
         <p className="text-xs text-muted">
-          Last changed by {updatedByName} on{" "}
+          Last changed{" "}
           {new Date(updatedAt).toLocaleString(undefined, {
             month: "short",
             day: "numeric",

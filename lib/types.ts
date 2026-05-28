@@ -1,12 +1,5 @@
-export type UserRole = "servant" | "doctor";
+export type Role = "servant" | "doctor";
 export type DayType = "regular" | "dialysis";
-
-export interface Profile {
-  id: string;
-  full_name: string | null;
-  role: UserRole;
-  created_at: string;
-}
 
 export interface Medication {
   id: string;
@@ -26,7 +19,6 @@ export interface Medication {
   active: boolean;
   created_at: string;
   updated_at: string;
-  created_by: string | null;
 }
 
 export interface Administration {
@@ -36,7 +28,6 @@ export interface Administration {
   dose_date: string;
   day_type: DayType;
   given_at: string;
-  given_by: string;
   given_by_name: string;
   latitude: number | null;
   longitude: number | null;
@@ -47,7 +38,6 @@ export interface Administration {
 export interface DialysisDay {
   dose_date: string;
   is_dialysis: boolean;
-  set_by: string | null;
   set_by_name: string | null;
   set_at: string;
 }

@@ -2,33 +2,25 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/session";
 import { formatTime12 } from "@/lib/time";
-import type { Medication, Profile } from "@/lib/types";
+import type { Medication } from "@/lib/types";
 import { ManageRowActions } from "./row-actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function ManagePage() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  if ((profile as Profile)?.role !== "doctor") {
+  const session = await getSession();
+  if (!session) redirect("/login");
+  if (session.role !== "doctor") {
     return (
       <main className="mx-auto max-w-xl p-6">
         <Card>
           <CardBody>
             <h1 className="text-xl font-semibold">Doctor access only</h1>
             <p className="mt-2 text-muted">
-              The Manage page is restricted to doctor accounts. Ask an admin to promote your
-              account in Supabase Studio if you need access.
+              The Manage page is for doctors. Sign in with the doctor password to access it.
             </p>
             <Link
               href="/dashboard"
@@ -42,6 +34,7 @@ export default async function ManagePage() {
     );
   }
 
+  const supabase = createServiceClient();
   const { data: meds } = await supabase
     .from("medications")
     .select("*")

@@ -1,7 +1,8 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/session";
 
 export interface MedicationInput {
   id?: string;
@@ -30,7 +31,6 @@ function parseTimes(raw: string): string[] {
 }
 
 function normalizeTime(t: string): string {
-  // Accepts "5:15 AM", "05:15", "17:15", "5:15pm" etc. → "HH:MM"
   const cleaned = t.replace(/\s+/g, "").toUpperCase();
   const m = cleaned.match(/^(\d{1,2}):?(\d{0,2})(AM|PM)?$/);
   if (!m) return t;
@@ -43,20 +43,6 @@ function normalizeTime(t: string): string {
     if (hh !== 12) hh += 12;
   }
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-}
-
-async function requireDoctor() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { supabase, user: null, error: "Not signed in." } as const;
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "doctor")
-    return { supabase, user, error: "Doctor role required." } as const;
-  return { supabase, user, error: null } as const;
 }
 
 function validate(input: MedicationInput): string | null {
@@ -77,6 +63,10 @@ function validate(input: MedicationInput): string | null {
 }
 
 export async function saveMedicationFromForm(formData: FormData) {
+  const session = await getSession();
+  if (!session) return { error: "Not signed in." };
+  if (session.role !== "doctor") return { error: "Doctor role required." };
+
   const idRaw = String(formData.get("id") || "");
   const input: MedicationInput = {
     id: idRaw || undefined,
@@ -85,43 +75,30 @@ export async function saveMedicationFromForm(formData: FormData) {
     brand: (String(formData.get("brand") || "").trim() || null) as string | null,
     dosage: String(formData.get("dosage") || "").trim(),
     frequency_count: Number(formData.get("frequency_count") || 1),
-    frequency_label: (String(formData.get("frequency_label") || "").trim() || null) as
-      | string
-      | null,
+    frequency_label: (String(formData.get("frequency_label") || "").trim() || null) as string | null,
     scheduled_times: parseTimes(String(formData.get("scheduled_times") || "")),
     routine: (String(formData.get("routine") || "").trim() || null) as string | null,
-    meal_relation: (String(formData.get("meal_relation") || "").trim() || null) as
-      | string
-      | null,
-    special_note: (String(formData.get("special_note") || "").trim() || null) as
-      | string
-      | null,
+    meal_relation: (String(formData.get("meal_relation") || "").trim() || null) as string | null,
+    special_note: (String(formData.get("special_note") || "").trim() || null) as string | null,
     suggestions: (String(formData.get("suggestions") || "").trim() || null) as string | null,
-    dialysis_dosage: (String(formData.get("dialysis_dosage") || "").trim() || null) as
-      | string
-      | null,
-    dialysis_scheduled_times: parseTimes(
-      String(formData.get("dialysis_scheduled_times") || ""),
-    ),
+    dialysis_dosage: (String(formData.get("dialysis_dosage") || "").trim() || null) as string | null,
+    dialysis_scheduled_times: parseTimes(String(formData.get("dialysis_scheduled_times") || "")),
     active: formData.get("active") !== null,
   };
 
   const err = validate(input);
   if (err) return { error: err };
 
-  const { supabase, user, error: authErr } = await requireDoctor();
-  if (authErr) return { error: authErr };
+  const supabase = createServiceClient();
 
   if (input.id) {
     const { error } = await supabase
       .from("medications")
-      .update({ ...input, created_by: undefined })
+      .update(input)
       .eq("id", input.id);
     if (error) return { error: error.message };
   } else {
-    const { error } = await supabase
-      .from("medications")
-      .insert({ ...input, created_by: user!.id });
+    const { error } = await supabase.from("medications").insert(input);
     if (error) return { error: error.message };
   }
 
@@ -131,8 +108,11 @@ export async function saveMedicationFromForm(formData: FormData) {
 }
 
 export async function deleteMedication(id: string) {
-  const { supabase, error: authErr } = await requireDoctor();
-  if (authErr) return { error: authErr };
+  const session = await getSession();
+  if (!session) return { error: "Not signed in." };
+  if (session.role !== "doctor") return { error: "Doctor role required." };
+
+  const supabase = createServiceClient();
   const { error } = await supabase.from("medications").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/manage");
@@ -141,8 +121,11 @@ export async function deleteMedication(id: string) {
 }
 
 export async function toggleActive(id: string, active: boolean) {
-  const { supabase, error: authErr } = await requireDoctor();
-  if (authErr) return { error: authErr };
+  const session = await getSession();
+  if (!session) return { error: "Not signed in." };
+  if (session.role !== "doctor") return { error: "Doctor role required." };
+
+  const supabase = createServiceClient();
   const { error } = await supabase.from("medications").update({ active }).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/manage");

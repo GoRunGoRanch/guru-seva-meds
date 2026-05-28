@@ -14,8 +14,8 @@ import type {
   DialysisDay,
   DoseSlot,
   Medication,
-  Profile,
 } from "@/lib/types";
+import type { Session } from "@/lib/session";
 import { DialysisToggle } from "./dialysis-toggle";
 import { MarkGivenButton } from "./mark-given-button";
 
@@ -25,7 +25,7 @@ interface Props {
   initialDialysisDay: DialysisDay | null;
   doseDate: string;
   timezone: string;
-  currentUser: Profile;
+  currentSession: Session;
 }
 
 export function DashboardClient({
@@ -34,7 +34,7 @@ export function DashboardClient({
   initialDialysisDay,
   doseDate,
   timezone,
-  currentUser,
+  currentSession,
 }: Props) {
   const [medications, setMedications] = useState(initialMedications);
   const [administrations, setAdministrations] = useState(initialAdministrations);
@@ -135,9 +135,7 @@ export function DashboardClient({
       <DialysisToggle dialysisDay={dialysisDay} />
 
       <div className="flex items-center justify-between text-sm text-muted">
-        <div>
-          {dateLabel} · {timezone}
-        </div>
+        <div>{dateLabel} · {timezone}</div>
         <div className="flex gap-2">
           <Badge tone="warn">{overdueCount} overdue</Badge>
           <Badge tone="wait">{upcomingCount} upcoming</Badge>
@@ -151,7 +149,7 @@ export function DashboardClient({
             <CardBody>
               <p className="text-muted">
                 No medications in the list yet.{" "}
-                {currentUser.role === "doctor" ? (
+                {currentSession.role === "doctor" ? (
                   <>
                     Go to <span className="font-medium">Manage list</span> to add or import them.
                   </>
@@ -163,14 +161,14 @@ export function DashboardClient({
           </Card>
         )}
         {slots.map((slot) => (
-          <DoseCard key={`${slot.medication.id}|${slot.scheduled_time}`} slot={slot} currentUser={currentUser} />
+          <DoseCard key={`${slot.medication.id}|${slot.scheduled_time}`} slot={slot} currentSession={currentSession} />
         ))}
       </div>
     </div>
   );
 }
 
-function DoseCard({ slot, currentUser }: { slot: DoseSlot; currentUser: Profile }) {
+function DoseCard({ slot, currentSession }: { slot: DoseSlot; currentSession: Session }) {
   const med = slot.medication;
   const borderClass =
     slot.status === "overdue"
@@ -224,7 +222,7 @@ function DoseCard({ slot, currentUser }: { slot: DoseSlot; currentUser: Profile 
           <div className="shrink-0">{statusBadge}</div>
         </div>
 
-        <MarkGivenButton slot={slot} currentUser={currentUser} />
+        <MarkGivenButton slot={slot} currentSession={currentSession} />
       </CardBody>
     </Card>
   );

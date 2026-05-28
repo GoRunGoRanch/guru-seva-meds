@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/session";
 
 export interface ImportRow {
   sort_order: number;
@@ -227,15 +228,9 @@ function parseSheetCsv(text: string): { rows: ImportRow[]; rawCount: number } {
 }
 
 export async function commitImport(rowsJson: string, replaceAll: boolean) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not signed in." };
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "doctor") return { error: "Doctor role required." };
+  const session = await getSession();
+  if (!session) return { error: "Not signed in." };
+  if (session.role !== "doctor") return { error: "Doctor role required." };
 
   let rows: ImportRow[];
   try {
@@ -249,8 +244,13 @@ export async function commitImport(rowsJson: string, replaceAll: boolean) {
   );
   if (valid.length === 0) return { error: "No valid rows to import." };
 
+  const supabase = createServiceClient();
+
   if (replaceAll) {
-    const { error: delErr } = await supabase.from("medications").delete().neq("id", "");
+    const { error: delErr } = await supabase
+      .from("medications")
+      .delete()
+      .gte("sort_order", -2147483648);
     if (delErr) return { error: delErr.message };
   }
 
@@ -269,7 +269,6 @@ export async function commitImport(rowsJson: string, replaceAll: boolean) {
     dialysis_dosage: null,
     dialysis_scheduled_times: [],
     active: r.active,
-    created_by: user.id,
   }));
 
   const { error } = await supabase.from("medications").insert(payload);
