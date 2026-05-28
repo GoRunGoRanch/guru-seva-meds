@@ -1,6 +1,5 @@
 "use server";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import {
   SESSION_COOKIE_MAX_AGE,
   SESSION_COOKIE_NAME,
@@ -34,5 +33,5 @@ export async function signIn(formData: FormData) {
     path: "/",
   });
 
-  redirect("/dashboard");
+  return { ok: true };
 }

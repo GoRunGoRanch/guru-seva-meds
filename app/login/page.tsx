@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,26 @@ import { signIn } from "./actions";
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setPending(true);
+    const fd = new FormData(e.currentTarget);
+    try {
+      const res = await signIn(fd);
+      if (res?.error) {
+        setError(res.error);
+        setPending(false);
+      } else {
+        window.location.href = "/dashboard";
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+      setPending(false);
+    }
+  }
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-6">
@@ -22,16 +41,7 @@ export default function LoginPage() {
 
       <Card>
         <CardBody>
-          <form
-            action={(fd) => {
-              setError(null);
-              startTransition(async () => {
-                const res = await signIn(fd);
-                if (res?.error) setError(res.error);
-              });
-            }}
-            className="space-y-4"
-          >
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="name">Your name</Label>
               <Input
