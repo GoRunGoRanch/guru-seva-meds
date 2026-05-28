@@ -15,12 +15,13 @@ export async function signIn(formData: FormData) {
   if (!password) return { error: "Please type the password." };
   if (name.length > 80) return { error: "Name is too long." };
 
-  const servantPw = (process.env.APP_GATE_PASSWORD || "").trim();
-  const doctorPw = (process.env.DOCTOR_PASSWORD || "").trim();
+  const typed = password.trim().toLowerCase();
+  const servantPw = (process.env.APP_GATE_PASSWORD || "").trim().toLowerCase();
+  const doctorPw = (process.env.DOCTOR_PASSWORD || "").trim().toLowerCase();
 
   let role: Role | null = null;
-  if (doctorPw && password === doctorPw) role = "doctor";
-  else if (servantPw && password === servantPw) role = "servant";
+  if (doctorPw && typed === doctorPw) role = "doctor";
+  else if (servantPw && typed === servantPw) role = "servant";
 
   if (!role) return { error: "Wrong password." };
 
